@@ -40,7 +40,7 @@
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Hugging Face Spaces Backend                  │
-│                  Flask + Gunicorn (Docker)                       │
+│                  Flask + Gunicorn (Docker)                      │
 │                                                                 │
 │   /features  → returns feature metadata + selection mask        │
 │   /predict   → 30 values → SelectKBest → Scaler → SVM → label   │
