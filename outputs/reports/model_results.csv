@@ -1,0 +1,6 @@
+Model,Accuracy,Precision,Recall,F1 Score,ROC-AUC,CV Mean,CV Std,Train Time (s)
+Support Vector Machine,0.9825,0.9861,0.9861,0.9861,0.9931,0.9714,0.0054,0.027
+Random Forest,0.9474,0.9583,0.9583,0.9583,0.9931,0.9604,0.0149,0.287
+Gradient Boosting,0.9561,0.9589,0.9722,0.9655,0.9931,0.9582,0.0128,0.698
+Neural Network (ANN),0.8772,1.0,0.8056,0.8923,0.9914,0.9538,0.0201,0.068
+Ensemble (Voting),0.9561,0.9589,0.9722,0.9655,0.9947,0.9736,0.0164,1.0

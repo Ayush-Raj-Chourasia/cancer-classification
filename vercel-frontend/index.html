@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cancer Classification – Interactive Tester</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+    body{background:#111;color:white;height:100vh;display:flex;justify-content:center;align-items:center}
+    .container{width:96%;height:94vh;background:#1e1e1e;border-radius:24px;display:flex;overflow:hidden;box-shadow:0 0 30px rgba(0,0,0,.5)}
+    .left{width:50%;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.08)}
+    .left-header{padding:32px 36px 0;flex-shrink:0}
+    .title{font-size:28px;font-weight:bold;color:#6ea8ff;margin-bottom:6px}
+    .subtitle{font-size:13px;color:#666;margin-bottom:18px}
+    .tabs{display:flex;gap:6px;margin-bottom:18px}
+    .tab{padding:7px 16px;border-radius:10px;font-size:13px;cursor:pointer;background:#2a2a2a;color:#888;border:1px solid transparent;transition:all .2s}
+    .tab.active{background:#1a3054;color:#6ea8ff;border-color:#3570b8}
+    .tab:hover{color:#aaa}
+    .slider-area{flex:1;overflow-y:auto;padding:0 36px 24px}
+    .slider-area::-webkit-scrollbar{width:5px}
+    .slider-area::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+    .control{margin-bottom:22px;display:none}
+    .control.visible{display:block}
+    .labelRow{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .feat-name{font-size:14px;color:#aab;flex:1}
+    .feat-name.selected{color:#87b8ff;font-weight:bold}
+    .value{background:#2c2c2c;padding:4px 12px;border-radius:8px;font-size:15px;color:#fff;min-width:80px;text-align:center;font-variant-numeric:tabular-nums}
+    .badge-sel{font-size:9px;padding:2px 7px;border-radius:6px;background:#1a3054;color:#5a9af5;letter-spacing:.5px;text-transform:uppercase}
+    input[type="range"]{width:100%;height:6px;appearance:none;background:#333;border-radius:10px;outline:none}
+    input[type="range"]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:#4d8cff;cursor:pointer;transition:transform .15s}
+    input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.25)}
+    .right{width:50%;display:flex;flex-direction:column;align-items:center;padding:32px 30px;gap:20px}
+    .result-box{text-align:center;width:100%}
+    .result-label{font-size:14px;color:#666;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}
+    .pred-badge{font-size:42px;font-weight:bold;padding:14px 48px;border-radius:16px;display:inline-block;transition:all .35s ease}
+    .pred-badge.benign{background:linear-gradient(135deg,#0d4f3c,#10b981);color:#d1fae5;box-shadow:0 0 35px rgba(16,185,129,.3)}
+    .pred-badge.malignant{background:linear-gradient(135deg,#6b1a1a,#ef4444);color:#fee2e2;box-shadow:0 0 35px rgba(239,68,68,.3)}
+    .pred-badge.waiting{background:#2a2a2a;color:#666;font-size:20px}
+    .conf-text{margin-top:12px;font-size:16px;color:#9bc2ff;line-height:1.6}
+    .conf-text strong{color:#6ea8ff}
+    .chart-wrap{flex:1;width:100%;display:flex;justify-content:center;align-items:center;min-height:0}
+    canvas{max-width:100%;max-height:100%}
+    .pipeline-info{width:100%;background:#252525;border-radius:12px;padding:14px 20px;font-size:12px;color:#777;line-height:1.7;flex-shrink:0}
+    .pipeline-info strong{color:#9bc2ff}
+    .actions{display:flex;gap:10px;flex-shrink:0}
+    .btn{padding:10px 26px;border-radius:10px;border:none;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s}
+    .btn-primary{background:#4d8cff;color:#fff}
+    .btn-primary:hover{background:#3a75e0}
+    .btn-secondary{background:#2c2c2c;color:#bbb;border:1px solid #3a3a3a}
+    .btn-secondary:hover{background:#3a3a3a}
+    .loading{text-align:center;color:#666;padding:60px;font-size:16px}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="left">
+    <div class="left-header">
+      <div class="title">🔬 Breast Cancer Classifier</div>
+      <div class="subtitle">Adjust cell-nuclei features → get a live prediction</div>
+      <div class="tabs">
+        <div class="tab active" data-group="mean">Mean</div>
+        <div class="tab" data-group="error">Std Error</div>
+        <div class="tab" data-group="worst">Worst</div>
+        <div class="tab" data-group="all">All (30)</div>
+      </div>
+    </div>
+    <div class="slider-area" id="sliderArea">
+      <div class="loading" id="loadingMsg">Loading features from API …</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="result-box">
+      <div class="result-label">Prediction Result</div>
+      <div class="pred-badge waiting" id="badge">Loading …</div>
+      <div class="conf-text" id="confText"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="runPrediction()">▶ Predict</button>
+      <button class="btn btn-secondary" onclick="resetSliders()">↺ Reset</button>
+    </div>
+    <div class="chart-wrap"><canvas id="radarChart"></canvas></div>
+    <div class="pipeline-info">
+      <strong>Pipeline:</strong> 30 features → SelectKBest (k=20) → StandardScaler → SVM &nbsp;|&nbsp;
+      <strong>Accuracy:</strong> 98.25% &nbsp;|&nbsp;
+      <strong>Backend:</strong> Hugging Face Spaces &nbsp;|&nbsp;
+      <strong>Frontend:</strong> Vercel
+    </div>
+  </div>
+</div>
+
+<script>
+// ── API base URL (Hugging Face Spaces) ──────────────────
+const API_BASE = 'https://alphacalculus-cancer-classification-api.hf.space';
+
+let FEATURES = [];
+let SELECTED = [];
+
+function groupOf(name){
+  if(name.startsWith('worst'))  return 'worst';
+  if(name.includes('error'))    return 'error';
+  return 'mean';
+}
+
+// ── Load features from API ──────────────────────────────
+async function loadFeatures(){
+  try{
+    const res = await fetch(API_BASE + '/features');
+    const data = await res.json();
+    FEATURES = data.features;
+    SELECTED = data.selected_mask;
+    buildSliders();
+    buildRadar();
+    runPrediction();
+  }catch(e){
+    document.getElementById('loadingMsg').textContent = 'Error loading features: ' + e.message + ' — API may still be starting up. Refresh in 30s.';
+  }
+}
+
+// ── Build sliders ───────────────────────────────────────
+function buildSliders(){
+  const area = document.getElementById('sliderArea');
+  area.innerHTML = '';
+
+  FEATURES.forEach((f,i)=>{
+    const div = document.createElement('div');
+    div.className = 'control';
+    div.dataset.group = groupOf(f.name);
+    div.dataset.idx = i;
+    const sel = SELECTED[i];
+    div.innerHTML = `
+      <div class="labelRow">
+        <div class="feat-name ${sel?'selected':''}">${f.name}</div>
+        ${sel ? '<span class="badge-sel">used</span>' : ''}
+        <div class="value" id="v${i}">${f.mean}</div>
+      </div>
+      <input type="range" id="s${i}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.mean}">
+    `;
+    div.querySelector('input').addEventListener('input', e=>{
+      document.getElementById('v'+i).textContent = parseFloat(e.target.value).toFixed(4);
+      updateRadar();
+    });
+    area.appendChild(div);
+  });
+
+  // activate tabs
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      const g = tab.dataset.group;
+      document.querySelectorAll('.control').forEach(c=>{
+        c.classList.toggle('visible', g==='all' || c.dataset.group===g);
+      });
+    });
+  });
+  document.querySelector('.tab[data-group="mean"]').click();
+}
+
+// ── Radar chart ─────────────────────────────────────────
+let radarChart = null;
+let meanIdx = [];
+
+function buildRadar(){
+  meanIdx = FEATURES.map((f,i)=>({f,i})).filter(o=>groupOf(o.f.name)==='mean');
+  const radarLabels = meanIdx.map(o=>o.f.name.replace('mean ',''));
+
+  radarChart = new Chart(document.getElementById('radarChart'),{
+    type:'radar',
+    data:{
+      labels: radarLabels,
+      datasets:[{
+        label:'Current Values (normalised)',
+        data: radarLabels.map(()=>0.5),
+        borderColor:'#4d8cff',
+        backgroundColor:'rgba(77,140,255,.18)',
+        borderWidth:2,
+        pointBackgroundColor:'#4d8cff',
+        pointRadius:4
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        r:{
+          angleLines:{color:'rgba(255,255,255,.08)'},
+          grid:{color:'rgba(255,255,255,.08)'},
+          pointLabels:{color:'#888',font:{size:11}},
+          ticks:{display:false},
+          suggestedMin:0, suggestedMax:1
+        }
+      }
+    }
+  });
+  updateRadar();
+}
+
+function updateRadar(){
+  if(!radarChart) return;
+  const ds = meanIdx.map(o=>{
+    const f=o.f, v=parseFloat(document.getElementById('s'+o.i).value);
+    return (f.max-f.min)===0 ? 0 : (v-f.min)/(f.max-f.min);
+  });
+  radarChart.data.datasets[0].data = ds;
+  radarChart.update('none');
+}
+
+// ── Predict ─────────────────────────────────────────────
+async function runPrediction(){
+  if(!FEATURES.length) return;
+  const values = FEATURES.map((_,i)=>parseFloat(document.getElementById('s'+i).value));
+  const badge = document.getElementById('badge');
+  const conf  = document.getElementById('confText');
+
+  badge.className='pred-badge waiting'; badge.textContent='Predicting …'; conf.textContent='';
+
+  try{
+    const res = await fetch(API_BASE + '/predict',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({features:values})
+    });
+    const d = await res.json();
+    badge.textContent = d.label;
+    badge.className = 'pred-badge ' + d.label.toLowerCase();
+
+    let extra='';
+    if(d.proba){
+      extra = ` (Malignant ${(d.proba[0]*100).toFixed(1)}% · Benign ${(d.proba[1]*100).toFixed(1)}%)`;
+    }
+    conf.innerHTML = `Confidence: <strong>${d.confidence}%</strong>${extra}`;
+
+    if(radarChart){
+      const col = d.label==='Benign' ? '#10b981' : '#ef4444';
+      radarChart.data.datasets[0].borderColor = col;
+      radarChart.data.datasets[0].backgroundColor = col+'30';
+      radarChart.data.datasets[0].pointBackgroundColor = col;
+      radarChart.update('none');
+    }
+  }catch(e){
+    badge.textContent='Error'; badge.className='pred-badge malignant';
+    conf.textContent='API not reachable — it may still be building. Try again in 30s.';
+  }
+}
+
+function resetSliders(){
+  FEATURES.forEach((f,i)=>{
+    document.getElementById('s'+i).value = f.mean;
+    document.getElementById('v'+i).textContent = f.mean;
+  });
+  document.getElementById('badge').className='pred-badge waiting';
+  document.getElementById('badge').textContent='Drag a slider …';
+  document.getElementById('confText').textContent='';
+  if(radarChart){
+    radarChart.data.datasets[0].borderColor='#4d8cff';
+    radarChart.data.datasets[0].backgroundColor='rgba(77,140,255,.18)';
+    radarChart.data.datasets[0].pointBackgroundColor='#4d8cff';
+    updateRadar();
+  }
+}
+
+// Boot
+loadFeatures();
+</script>
+</body>
+</html>
