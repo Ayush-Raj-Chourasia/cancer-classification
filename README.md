@@ -13,7 +13,7 @@
 
 **An end-to-end machine learning project that classifies breast tumors as Benign or Malignant using cell-nuclei features from the Wisconsin Breast Cancer Dataset, deployed as a full-stack web application.**
 
-[🚀 Live Demo](https://vercel-frontend-three-blue.vercel.app) · [📊 API](https://alphacalculus-cancer-classification-api.hf.space) · [📓 Notebook](#notebook)
+[Live Demo](https://cancer-classification.vercel.app/) · [API](https://alphacalculus-cancer-classification-api.hf.space)
 
 </div>
 
@@ -22,8 +22,8 @@
 ## 📸 Screenshots
 
 <div align="center">
-<img src="outputs/plots/04_model_comparison.png" alt="Model Comparison" width="48%"/>
-<img src="outputs/plots/06_roc_curves.png" alt="ROC Curves" width="48%"/>
+  <img src="outputs/plots/02_correlation_heatmap.png" alt="Correlation Heatmap" width="48%"/>
+  <img src="outputs/plots/09_radar_chart.png" alt="Radar Chart"  width="48%"/>
 </div>
 
 ---
@@ -215,9 +215,3 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
-
-<div align="center">
-
-**Built with ❤️ for MLC2 Project**
-
-</div>
